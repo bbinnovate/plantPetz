@@ -20,7 +20,8 @@
         "NSCameraUsageDescription": "PlantPetz needs access to your camera to take photos of your plants.",
         "NSPhotoLibraryUsageDescription": "PlantPetz needs access to your photo library to select plant images.",
         "NSPhotoLibraryAddUsageDescription": "PlantPetz needs permission to save plant photos to your library.",
-        "NSUserNotificationsUsageDescription": "PlantPetz sends you reminders about your plants."
+        "NSUserNotificationsUsageDescription": "PlantPetz sends you reminders about your plants.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
         "googleSignIn": {

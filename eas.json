@@ -8,17 +8,29 @@
       "distribution": "internal",
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "GOOGLE_SERVICES_PLIST": "./GoogleService-Info.plist"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "GOOGLE_SERVICES_PLIST": "./GoogleService-Info.plist"
       }
     },
     "production": {
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "GOOGLE_SERVICES_PLIST": "./GoogleService-Info.plist"
       }
     }
   },
@@ -26,4 +38,3 @@
     "production": {}
   }
 }
-
