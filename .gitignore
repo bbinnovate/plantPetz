@@ -47,5 +47,5 @@ eas-build-*.log
 
 # Secrets
 firebase-config.json
-google-services.json
-GoogleService-Info.plist
+# Note: GoogleService-Info.plist is committed for EAS builds
+# Security is handled by Firebase Rules
