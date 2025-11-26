@@ -23,11 +23,6 @@
         "NSUserNotificationsUsageDescription": "PlantPetz sends you reminders about your plants.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "config": {
-        "googleSignIn": {
-          "reservedClientId": "com.googleusercontent.apps.513863404952-43f12odrbo4jb3dgmuq46buamfohjd3f"
-        }
-      },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
@@ -95,7 +90,8 @@
           "backgroundColor": "#FAF8F5"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
