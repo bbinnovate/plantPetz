@@ -3,21 +3,70 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Images } from "@/constants/assets";
+import { useSignIn } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  View,
+} from "react-native";
 
 export default function EmailSignInScreen() {
   const router = useRouter();
+  const { signIn } = useSignIn();
   const [email, setEmail] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isValidEmail = email.length > 0 && email.includes("@");
 
-  const handleSendOTP = () => {
-    if (isValidEmail) {
-      router.push("/onboarding/verify-otp");
+  const handleSendOTP = async () => {
+    if (!isValidEmail || !signIn) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Create sign-in with email code strategy
+      await signIn.create({
+        identifier: email,
+        strategy: "email_code",
+      });
+
+      // Navigate to OTP verification screen with email
+      router.push({
+        pathname: "/onboarding/verify-otp",
+        params: { email },
+      });
+    } catch (err: any) {
+      console.error("Error sending OTP:", err);
+
+      let errorMessage = "Failed to send OTP. Please try again.";
+
+      if (err?.errors?.[0]?.message) {
+        const clerkError = err.errors[0].message;
+        if (clerkError.includes("identifier") || clerkError.includes("email")) {
+          errorMessage = "Please enter a valid email address.";
+        } else if (clerkError.includes("rate") || clerkError.includes("many")) {
+          errorMessage =
+            "Too many attempts. Please wait a moment and try again.";
+        } else {
+          errorMessage = clerkError;
+        }
+      } else if (
+        err?.message?.includes("network") ||
+        err?.message?.includes("Network")
+      ) {
+        errorMessage = "Network error. Please check your connection.";
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,18 +100,31 @@ export default function EmailSignInScreen() {
                 placeholder="Enter Your Email"
                 placeholderTextColor="#C3C3C3"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setError(null); // Clear error on input
+                }}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 className={`h-14 rounded-full px-6 text-base text-[#355339] bg-white ${
-                  isFocused && email.length > 0
+                  error
+                    ? "border-2 border-[#C40101]"
+                    : isFocused && email.length > 0
                     ? "border-2 border-primary"
                     : "border-2 border-[#E5E5E5]"
                 }`}
               />
+
+              {error && (
+                <View className="bg-[#FFDEDF] border border-[#C40101] rounded-lg p-3">
+                  <Text className="text-sm font-medium text-[#C40101] text-center">
+                    {error}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -77,15 +139,19 @@ export default function EmailSignInScreen() {
                   : "bg-[#CED4DA] border-0"
               }`}
               onPress={handleSendOTP}
-              disabled={!isValidEmail}
+              disabled={!isValidEmail || loading}
             >
-              <Text
-                className={`font-medium text-base ${
-                  isValidEmail ? "text-white" : "text-[#7A7A7A]"
-                }`}
-              >
-                Send OTP
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text
+                  className={`font-medium text-base ${
+                    isValidEmail ? "text-white" : "text-[#7A7A7A]"
+                  }`}
+                >
+                  Send OTP
+                </Text>
+              )}
             </Button>
           </View>
         </View>
