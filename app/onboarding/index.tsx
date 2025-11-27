@@ -2,19 +2,119 @@ import { Screen } from "@/components/Screen";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Images } from "@/constants/assets";
+import { syncClerkUserToFirestore } from "@/services/clerk-sync";
+import { useClerk, useSSO } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Image, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Image, View } from "react-native";
+
+// Ensure browser auth session completes
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const clerk = useClerk();
+  const { startSSOFlow } = useSSO();
 
-  const handleGoogleSignIn = () => {
-    router.push("/onboarding/profile");
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: "oauth_google",
+      });
+
+      // If sign in was successful, set the active session
+      if (createdSessionId) {
+        await setActive!({ session: createdSessionId });
+
+        // Wait a moment for Clerk to fully populate the user
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Get user data from Clerk using the clerk instance
+        const user = clerk.user;
+
+        if (!user) {
+          throw new Error("User data not available");
+        }
+
+        // Sync with Firebase and get user status
+        const userStatus = await syncClerkUserToFirestore(
+          user.id,
+          user.primaryEmailAddress?.emailAddress,
+          user.fullName,
+          user.imageUrl
+        );
+
+        console.log("User status:", userStatus);
+
+        // Navigate based on user status
+        if (userStatus.isNewUser || !userStatus.hasEnteredCode) {
+          router.push("/onboarding/unique-code");
+        } else if (!userStatus.profileComplete) {
+          router.push("/onboarding/profile");
+        } else {
+          router.push("/(tabs)");
+        }
+      }
+    } catch (err: any) {
+      console.error("Google Sign-In error:", err);
+      Alert.alert(
+        "Sign In Failed",
+        err.message || "An unexpected error occurred"
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
-  const handleAppleSignIn = () => {
-    router.push("/onboarding/profile");
+  const handleAppleSignIn = async () => {
+    try {
+      setAppleLoading(true);
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: "oauth_apple",
+      });
+
+      if (createdSessionId) {
+        await setActive!({ session: createdSessionId });
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const user = clerk.user;
+
+        if (!user) {
+          throw new Error("User data not available");
+        }
+
+        const userStatus = await syncClerkUserToFirestore(
+          user.id,
+          user.primaryEmailAddress?.emailAddress,
+          user.fullName,
+          user.imageUrl
+        );
+
+        console.log("User status:", userStatus);
+
+        if (userStatus.isNewUser || !userStatus.hasEnteredCode) {
+          router.push("/onboarding/unique-code");
+        } else if (!userStatus.profileComplete) {
+          router.push("/onboarding/profile");
+        } else {
+          router.push("/(tabs)");
+        }
+      }
+    } catch (err: any) {
+      console.error("Apple Sign-In error:", err);
+      Alert.alert(
+        "Sign In Failed",
+        err.message || "An unexpected error occurred"
+      );
+    } finally {
+      setAppleLoading(false);
+    }
   };
 
   const handleEmailSignIn = () => {
@@ -67,24 +167,36 @@ export default function SignUpScreen() {
               variant="outline"
               className="border-2 border-primary bg-white rounded-full h-[54px] flex-row items-center justify-center gap-2"
               onPress={handleGoogleSignIn}
-              disabled
+              disabled={googleLoading || appleLoading}
             >
-              <Ionicons name="logo-google" size={18} color="#1A1A1A" />
-              <Text className="text-black font-medium text-sm">
-                Sign In With Google
-              </Text>
+              {googleLoading ? (
+                <ActivityIndicator size="small" color="#1A1A1A" />
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={18} color="#1A1A1A" />
+                  <Text className="text-black font-medium text-sm">
+                    Sign In With Google
+                  </Text>
+                </>
+              )}
             </Button>
 
             <Button
               variant="outline"
               className="border-2 border-primary bg-white rounded-full h-[54px] flex-row items-center justify-center gap-2"
               onPress={handleAppleSignIn}
-              disabled
+              disabled={googleLoading || appleLoading}
             >
-              <Ionicons name="logo-apple" size={18} color="#1A1A1A" />
-              <Text className="text-black font-medium text-sm">
-                Sign In With Apple
-              </Text>
+              {appleLoading ? (
+                <ActivityIndicator size="small" color="#1A1A1A" />
+              ) : (
+                <>
+                  <Ionicons name="logo-apple" size={18} color="#1A1A1A" />
+                  <Text className="text-black font-medium text-sm">
+                    Sign In With Apple
+                  </Text>
+                </>
+              )}
             </Button>
           </View>
         </View>

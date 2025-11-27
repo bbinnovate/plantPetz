@@ -3,10 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Images } from "@/constants/assets";
+import { completeUserProfile } from "@/services/clerk-sync";
+import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -17,13 +21,15 @@ import {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const { user } = useUser();
+  const [name, setName] = useState(user?.fullName || "");
   const [phone, setPhone] = useState("");
   const [level, setLevel] = useState<"beginner" | "intermediate" | "advance">(
     "beginner"
   );
   const [city, setCity] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState<string>("shy");
+  const [loading, setLoading] = useState(false);
 
   const avatars = [
     { id: "shy", image: Images.characters.shy },
@@ -52,8 +58,49 @@ export default function ProfileScreen() {
     },
   ];
 
-  const handleSaveProfile = () => {
-    router.replace("/(tabs)");
+  const handleSaveProfile = async () => {
+    if (!user) {
+      Alert.alert("Error", "User not found. Please sign in again.");
+      return;
+    }
+
+    // Validate required fields
+    if (!name.trim()) {
+      Alert.alert("Required Field", "Please enter your name");
+      return;
+    }
+
+    if (!city.trim()) {
+      Alert.alert("Required Field", "Please enter your city");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Map level string to number
+      const levelMap = {
+        beginner: 1,
+        intermediate: 2,
+        advance: 3,
+      };
+
+      // Save profile to Firebase
+      await completeUserProfile(user.id, {
+        name: name.trim(),
+        city: city.trim(),
+        level: levelMap[level],
+        avatarUrl: selectedAvatar,
+      });
+
+      // Navigate to main app
+      router.replace("/(tabs)");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -242,15 +289,19 @@ export default function ProfileScreen() {
                   : "bg-[#CED4DA] border-0"
               }`}
               onPress={handleSaveProfile}
-              disabled={!name.trim()}
+              disabled={!name.trim() || loading}
             >
-              <Text
-                className={`font-medium text-base ${
-                  name.trim() ? "text-white" : "text-[#7A7A7A]"
-                }`}
-              >
-                Save Profile
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text
+                  className={`font-medium text-base ${
+                    name.trim() ? "text-white" : "text-[#7A7A7A]"
+                  }`}
+                >
+                  Save Profile
+                </Text>
+              )}
             </Button>
           </View>
         </View>

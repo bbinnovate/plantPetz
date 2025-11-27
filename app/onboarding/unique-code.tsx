@@ -2,14 +2,24 @@ import { Screen } from "@/components/Screen";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Images } from "@/constants/assets";
+import { markCodeEntered } from "@/services/clerk-sync";
+import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
+  View,
+} from "react-native";
 
 export default function UniqueCodeScreen() {
   const router = useRouter();
+  const { user } = useUser();
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const isCodeComplete = code.every((digit) => digit !== "");
@@ -49,15 +59,26 @@ export default function UniqueCodeScreen() {
     }
   };
 
-  const handleSubmitCode = () => {
-    if (isCodeComplete) {
+  const handleSubmitCode = async () => {
+    if (isCodeComplete && user) {
       const codeValue = code.join("");
-      // TODO: Verify code with backend
-      // For now, simulate error for demo
-      if (codeValue === "123459") {
-        router.push("/onboarding/permissions");
-      } else {
+      setLoading(true);
+
+      try {
+        if (codeValue.length === 6) {
+          // Mark code as entered in Firebase
+          await markCodeEntered(user.id);
+
+          // Navigate to profile screen
+          router.push("/onboarding/profile");
+        } else {
+          setError(true);
+        }
+      } catch (err) {
+        console.error("Error submitting code:", err);
         setError(true);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -142,19 +163,23 @@ export default function UniqueCodeScreen() {
                   : "bg-[#CED4DA] border-0"
               }`}
               onPress={handleSubmitCode}
-              disabled={!isCodeComplete && !error}
+              disabled={(!isCodeComplete && !error) || loading}
             >
-              <Text
-                className={`font-medium text-base ${
-                  error
-                    ? "text-[#C40101]"
-                    : isCodeComplete
-                    ? "text-white"
-                    : "text-[#7A7A7A]"
-                }`}
-              >
-                {error ? "Retry" : "Submit Code"}
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text
+                  className={`font-medium text-base ${
+                    error
+                      ? "text-[#C40101]"
+                      : isCodeComplete
+                      ? "text-white"
+                      : "text-[#7A7A7A]"
+                  }`}
+                >
+                  {error ? "Retry" : "Submit Code"}
+                </Text>
+              )}
             </Button>
           </View>
         </View>
