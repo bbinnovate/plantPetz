@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { Images } from "@/constants/assets";
 
 export default function HomeScreen() {
@@ -12,8 +12,23 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut();
-    router.replace("/onboarding");
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Continue",
+          onPress: async () => {
+            await signOut();
+            router.replace("/onboarding");
+          },
+        },
+      ]
+    );
   };
 
   return (
