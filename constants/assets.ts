@@ -19,5 +19,6 @@ export const Images = {
     greenPot: require("../assets/images/icons/green-pot.png"),
     darkGreenPot: require("../assets/images/icons/dark-green-pot.png"),
     violetPot: require("../assets/images/icons/violet-pot.png"),
+    nameLogo: require("../assets/images/icons/plantpetz-name-logo.png"),
   },
 } as const;

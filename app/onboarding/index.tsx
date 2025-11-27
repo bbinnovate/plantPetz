@@ -127,7 +127,7 @@ export default function SignUpScreen() {
         {/* Logo Header */}
         <View className="items-center pt-6">
           <Image
-            source={Images.icons.logo}
+            source={Images.icons.nameLogo}
             className="w-[180px] h-[32px]"
             resizeMode="contain"
           />

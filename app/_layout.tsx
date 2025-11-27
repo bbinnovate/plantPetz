@@ -49,6 +49,7 @@ async function preloadAssets() {
       Images.backgrounds.primary,
       Images.backgrounds.splash,
       Images.icons.logo,
+      Images.icons.nameLogo,
       Images.characters.calm,
       Images.characters.happy,
       Images.characters.shy,

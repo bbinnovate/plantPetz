@@ -4,6 +4,7 @@ import { Text } from "@/components/ui/text";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { View } from "react-native";
+import { Images } from "@/constants/assets";
 
 export default function HomeScreen() {
   const { signOut } = useAuth();
@@ -16,9 +17,12 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen className="bg-background justify-center items-center p-6">
+    <Screen
+      backgroundImage={Images.backgrounds.primary}
+      className="justify-center items-center p-6"
+    >
       <Text variant="h1" className="font-semibold">
-        Welcome to PlantPetz! 🌱
+        Welcome to PlantPetz!
       </Text>
       <Text variant="p" className="mt-2">
         Signed in as:{" "}
