@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.plantpetz.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "PlantPetz needs access to your camera to take photos of your plants.",
         "NSPhotoLibraryUsageDescription": "PlantPetz needs access to your photo library to select plant images.",

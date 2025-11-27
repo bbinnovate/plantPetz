@@ -56,7 +56,12 @@ async function preloadAssets() {
     ];
 
     const cacheImages = imageAssets.map((image) => {
-      return Asset.fromModule(image).downloadAsync();
+      return Asset.fromModule(image)
+        .downloadAsync()
+        .catch((err) => {
+          console.warn("Failed to load image:", err);
+          return null;
+        });
     });
 
     await Promise.all(cacheImages);
@@ -66,7 +71,7 @@ async function preloadAssets() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_600SemiBold,
@@ -75,16 +80,21 @@ export default function RootLayout() {
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   useEffect(() => {
-    preloadAssets().then(() => setAssetsLoaded(true));
+    preloadAssets()
+      .then(() => setAssetsLoaded(true))
+      .catch((err) => {
+        console.warn("Asset loading error:", err);
+        setAssetsLoaded(true);
+      });
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && assetsLoaded) {
+    if ((fontsLoaded || fontError) && assetsLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, assetsLoaded]);
+  }, [fontsLoaded, fontError, assetsLoaded]);
 
-  if (!fontsLoaded || !assetsLoaded) {
+  if ((!fontsLoaded && !fontError) || !assetsLoaded) {
     return null;
   }
 
@@ -92,7 +102,7 @@ export default function RootLayout() {
 
   if (!publishableKey) {
     throw new Error(
-      "Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env"
+      "Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your environment variables."
     );
   }
 
