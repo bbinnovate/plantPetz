@@ -87,7 +87,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/backgrounds/splash-screen.png",
+          "image": "./assets/images/icons/plantpetz-logo.png",
           "resizeMode": "contain",
           "backgroundColor": "#FAF8F5"
         }
