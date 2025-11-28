@@ -69,8 +69,8 @@ export default function UniqueCodeScreen() {
           // Mark code as entered in Firebase
           await markCodeEntered(user.id);
 
-          // Navigate to profile screen
-          router.push("/onboarding/profile");
+          // Navigate to permissions screen
+          router.push("/onboarding/permissions");
         } else {
           setError(true);
         }
