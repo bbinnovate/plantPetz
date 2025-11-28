@@ -3,9 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Images } from "@/constants/assets";
 import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
+import { Camera } from "expo-camera";
+import * as MediaLibrary from "expo-media-library";
+import * as Location from "expo-location";
+import { Linking, Alert, Switch, View } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ScrollView, Switch, View } from "react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -18,11 +22,91 @@ export default function PermissionsScreen() {
     media: false,
   });
 
+  // Load existing permission states on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const [notif, cam, loc, lib] = await Promise.all([
+          Notifications.getPermissionsAsync(),
+          Camera.getCameraPermissionsAsync(),
+          Location.getForegroundPermissionsAsync().catch(() => ({
+            status: "undetermined" as const,
+          })),
+          MediaLibrary.getPermissionsAsync(),
+        ]);
+
+        setPermissions({
+          notifications: notif.status === "granted",
+          camera: cam.status === "granted",
+          location: loc.status === "granted",
+          media: lib.status === "granted",
+        });
+      } catch {
+        // Best-effort: keep defaults if something fails
+      }
+    })();
+  }, []);
+
+  const openSettings = () => Linking.openSettings();
+
+  const requestPermission = async (key: keyof typeof permissions) => {
+    try {
+      let granted = false;
+      switch (key) {
+        case "notifications": {
+          const { status } = await Notifications.requestPermissionsAsync();
+          granted = status === "granted";
+          break;
+        }
+        case "camera": {
+          const { status } = await Camera.requestCameraPermissionsAsync();
+          granted = status === "granted";
+          break;
+        }
+        case "location": {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          granted = status === "granted";
+          break;
+        }
+        case "media": {
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          granted = status === "granted";
+          break;
+        }
+      }
+
+      setPermissions((prev) => ({ ...prev, [key]: granted }));
+
+      if (!granted) {
+        Alert.alert(
+          "Permission needed",
+          "To enable this feature, please allow access in your device Settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: openSettings },
+          ]
+        );
+      }
+    } catch {
+      Alert.alert("Error", "Could not request permission. Please try again.");
+    }
+  };
+
   const togglePermission = (key: keyof typeof permissions) => {
-    setPermissions((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setPermissions((prev) => ({ ...prev }));
+    // If turning on, request permission; turning off requires user action in Settings
+    if (!permissions[key]) {
+      requestPermission(key);
+    } else {
+      Alert.alert(
+        "Turn off permission",
+        "Permissions can only be turned off from device Settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: openSettings },
+        ]
+      );
+    }
   };
 
   const handleDone = () => {
