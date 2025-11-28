@@ -36,7 +36,7 @@ const tokenCache = {
   },
 };
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => null);
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -78,6 +78,8 @@ export default function RootLayout() {
     Poppins_700Bold,
   });
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [minDelayDone, setMinDelayDone] = useState(false);
+  const [maxWaitDone, setMaxWaitDone] = useState(false);
 
   useEffect(() => {
     preloadAssets()
@@ -89,14 +91,26 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && assetsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError, assetsLoaded]);
+    const t = setTimeout(() => setMinDelayDone(true), 1100);
+    return () => clearTimeout(t);
+  }, []);
 
-  if ((!fontsLoaded && !fontError) || !assetsLoaded) {
-    return null;
-  }
+  useEffect(() => {
+    const t = setTimeout(() => setMaxWaitDone(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const fontsReady = fontsLoaded || !!fontError || maxWaitDone;
+    const assetsReady = assetsLoaded || maxWaitDone;
+    if (fontsReady && assetsReady && minDelayDone) {
+      SplashScreen.hideAsync().catch(() => null);
+    }
+  }, [fontsLoaded, fontError, assetsLoaded, minDelayDone, maxWaitDone]);
+
+  const fontsReady = fontsLoaded || !!fontError || maxWaitDone;
+  const assetsReady = assetsLoaded || maxWaitDone;
+  if (!(fontsReady && assetsReady && minDelayDone)) return null;
 
   const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
